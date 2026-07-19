@@ -189,30 +189,27 @@ static void jni_hook_list_add(const char *class_name, JNINativeMethod *methods, 
 }
 
 static bool update_mnt_ns(enum mount_namespace_state mns_state, bool dry_run) {
-  char ns_path[PATH_MAX];
-  if (!rezygiskd_update_mns(mns_state, ns_path, sizeof(ns_path))) {
+  int updated_ns = rezygiskd_update_mns(mns_state);
+  if (updated_ns == -1) {
     PLOGE("Failed to update mount namespace");
 
     return false;
   }
 
-  if (dry_run) return true;
+  if (dry_run) {
+    close(updated_ns);
 
-  int updated_ns = open(ns_path, O_RDONLY);
-  if (updated_ns == -1) {
-    PLOGE("Failed to open mount namespace [%s]", ns_path);
-
-    return false;
+    return true;
   }
 
   char *mns_state_str = "unknown";
   if (mns_state == Clean) mns_state_str = "clean";
   if (mns_state == Mounted) mns_state_str = "mounted";
 
-  LOGD("set mount namespace to [%s] fd=[%d]: %s", ns_path, updated_ns, mns_state_str);
+  LOGD("set mount namespace fd=[%d]: %s", updated_ns, mns_state_str);
 
   if (setns(updated_ns, CLONE_NEWNS) == -1) {
-    PLOGE("Failed to set mount namespace [%s]", ns_path);
+    PLOGE("Failed to set mount namespace fd=[%d]", updated_ns);
 
     close(updated_ns);
 

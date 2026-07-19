@@ -355,6 +355,12 @@ ssize_t read_string(int fd, char *restrict buf, size_t buf_size) {
 
 /* INFO: Cannot use restrict here as execv does not have restrict */
 bool exec_command(char *restrict buf, size_t len, const char *restrict file, const char *const argv[]) {
+  if (len == 0) {
+    errno = EINVAL;
+
+    return false;
+  }
+
   int link[2];
   pid_t pid;
 
@@ -388,14 +394,26 @@ bool exec_command(char *restrict buf, size_t len, const char *restrict file, con
   } else {
     close(link[1]);
 
-    ssize_t nbytes = read(link[0], buf, len);
-    if (nbytes > 0) buf[nbytes - 1] = '\0';
+    ssize_t nbytes = read(link[0], buf, len - 1);
+    if (nbytes > 0) {
+      if (buf[nbytes - 1] == '\n') nbytes--;
+      buf[nbytes] = '\0';
+    }
     /* INFO: If something went wrong, at least we must ensure it is NULL-terminated */
     else buf[0] = '\0';
 
-    wait(NULL);
+    int status = 0;
+    pid_t waited = waitpid(pid, &status, 0);
 
     close(link[0]);
+
+    if (nbytes == -1) return false;
+    if (waited == -1) return false;
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+      errno = EIO;
+
+      return false;
+    }
   }
 
   return true;
@@ -476,7 +494,8 @@ void stringify_root_impl_name(struct root_impl impl, char *restrict output) {
       break;
     }
     case Magisk: {
-      strcpy(output, "Magisk");
+      if (impl.variant == MOfficial) strcpy(output, "Magisk Official");
+      else strcpy(output, "Magisk Kitsune");
 
       break;
     }
@@ -729,9 +748,11 @@ bool umount_root(struct root_impl impl) {
   return true;
 }
 
-int save_mns_fd(int pid, enum MountNamespaceState mns_state, struct root_impl impl) {
+int save_mns_fd(int pid, enum MountNamespaceState mns_state, struct root_impl impl, bool *transient) {
   static int clean_namespace_fd = -1;
   static int mounted_namespace_fd = -1;
+
+  if (transient != NULL) *transient = false;
 
   if (mns_state == Clean && clean_namespace_fd != -1) return clean_namespace_fd;
   if (mns_state == Mounted && mounted_namespace_fd != -1) return mounted_namespace_fd;
@@ -852,6 +873,24 @@ int save_mns_fd(int pid, enum MountNamespaceState mns_state, struct root_impl im
     LOGE("waitpid: %s", strerror(errno));
 
     return -1;
+  }
+
+  if (impl.impl == Magisk && impl.variant == MKitsune && mns_state == Clean) {
+    /* INFO: Kitsune can add MagiskSU mounts late during boot. A clean
+               namespace captured before boot completion can therefore become
+               stale. Return a one-shot fd until the mount topology settles. */
+    char boot_completed[2];
+    get_property("sys.boot_completed", boot_completed);
+
+    if (boot_completed[0] == '1') {
+      LOGI("[Magisk] Caching post-boot Kitsune clean namespace fd.");
+
+      clean_namespace_fd = ns_fd;
+    } else if (transient != NULL) {
+      *transient = true;
+    }
+
+    return ns_fd;
   }
 
   if (mns_state == Clean) clean_namespace_fd = ns_fd;

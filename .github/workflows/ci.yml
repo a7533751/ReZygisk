@@ -1,6 +1,9 @@
 name: Untrusted CI
 
 on:
+  push:
+    branches-ignore:
+      - main
   pull_request:
   merge_group:
   workflow_dispatch:

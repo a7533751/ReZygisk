@@ -4,6 +4,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <fcntl.h>
+#include <limits.h>
 #include <linux/un.h>
 #include <sys/socket.h>
 
@@ -341,37 +343,49 @@ void rezygiskd_zygote_restart() {
   close(fd);
 }
 
-bool rezygiskd_update_mns(enum mount_namespace_state nms_state, char *buf, size_t buf_size) {
+int rezygiskd_update_mns(enum mount_namespace_state nms_state) {
   int fd = rezygiskd_connect(1);
   if (fd == -1) {
     PLOGE("connection to ReZygiskd");
 
-    return false;
+    return -1;
   }
 
-  safe_write(write_uint8_t(fd, (uint8_t)UpdateMountNamespace), "UpdateMountNamespace action", return false);
-  safe_write(write_uint32_t(fd, (uint32_t)getpid()), "pid", return false);
-  safe_write(write_uint8_t(fd, (uint8_t)nms_state), "mount namespace state", return false);
+  safe_write(write_uint8_t(fd, (uint8_t)UpdateMountNamespace), "UpdateMountNamespace action", return -1);
+  safe_write(write_uint32_t(fd, (uint32_t)getpid()), "pid", return -1);
+  safe_write(write_uint8_t(fd, (uint8_t)nms_state), "mount namespace state", return -1);
 
   uint32_t target_pid = 0;
-  safe_read(read_uint32_t(fd, &target_pid), "target pid", return false);
+  safe_read(read_uint32_t(fd, &target_pid), "target pid", return -1);
 
   uint32_t target_fd = 0;
-  safe_read(read_uint32_t(fd, &target_fd), "target fd", return false);
+  safe_read(read_uint32_t(fd, &target_fd), "target fd", return -1);
 
   if (target_fd == 0) {
     LOGE("Failed to get target fd");
 
     close(fd);
 
-    return false;
+    return -1;
   }
 
-  snprintf(buf, buf_size, "/proc/%u/fd/%u", target_pid, target_fd);
+  char ns_path[PATH_MAX];
+  snprintf(ns_path, sizeof(ns_path), "/proc/%u/fd/%u", target_pid, target_fd);
+
+  int ns_fd = open(ns_path, O_RDONLY | O_CLOEXEC);
+  uint8_t opened = ns_fd >= 0 ? 1 : 0;
+  if (write_uint8_t(fd, opened) != (ssize_t)sizeof(opened)) {
+    LOGE("Failed to acknowledge mount namespace fd");
+
+    if (ns_fd >= 0) close(ns_fd);
+    close(fd);
+
+    return -1;
+  }
 
   close(fd);
 
-  return true;
+  return ns_fd;
 }
 
 bool rezygiskd_remove_module(size_t index) {

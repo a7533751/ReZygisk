@@ -593,9 +593,10 @@ void zygiskd_start(char *restrict argv[]) {
         ASSURE_SIZE_WRITE("UpdateMountNamespace", "our_pid", ret, sizeof(our_pid), break);
 
         if ((enum MountNamespaceState)mns_state == Clean)
-          save_mns_fd(pid, Mounted, impl);
+          save_mns_fd(pid, Mounted, impl, NULL);
 
-        int ns_fd = save_mns_fd(pid, (enum MountNamespaceState)mns_state, impl);
+        bool transient = false;
+        int ns_fd = save_mns_fd(pid, (enum MountNamespaceState)mns_state, impl, &transient);
         if (ns_fd == -1) {
           LOGE("Failed to save mount namespace fd for pid %d: %s", pid, strerror(errno));
 
@@ -607,6 +608,13 @@ void zygiskd_start(char *restrict argv[]) {
 
         ret = write_uint32_t(client_fd, (uint32_t)ns_fd);
         ASSURE_SIZE_WRITE("UpdateMountNamespace", "ns_fd", ret, sizeof(ns_fd), break);
+
+        uint8_t opened = 0;
+        ret = read_uint8_t(client_fd, &opened);
+        if (transient) close(ns_fd);
+        ASSURE_SIZE_READ("UpdateMountNamespace", "opened", ret, sizeof(opened), break);
+
+        if (!opened) LOGE("Client failed to open mount namespace fd %d", ns_fd);
 
         break;
       }

@@ -2,7 +2,7 @@
 
 [Español(Argentina)](/READMEs/README_es-AR.md)|[Bahasa Indonesia](/READMEs/README_id-ID.md)|[Português Brasileiro](/READMEs/README_pt-BR.md)|[Українська](/READMEs/README_uk-UA.md)|[Tiếng Việt](/READMEs/README_vi-VN.md)|
 
-ReZygisk is a fork of Zygisk Next, a standalone implementation of Zygisk, providing Zygisk API support for KernelSU, APatch and Magisk.
+ReZygisk is a fork of Zygisk Next, a standalone implementation of Zygisk, providing Zygisk API support for KernelSU, APatch and Magisk (Official and Kitsune).
 
 The codebase has been rewritten to C entirely, bringing not only a much cleaner codebase that is easier to follow, but also a lighter binaries that are also faster. Custom linkers also have been introduced to future-proof ReZygisk against future detections, not using system linker at all in normal circunstances, defeating any linker-based detection.
 
@@ -48,6 +48,8 @@ After flashing, check the installation logs to ensure there are no errors, and i
 
 > [!WARNING]
 > Magisk users should disable built-in Zygisk, as it will conflict with ReZygisk. This can be done by going to the `Settings` section of Magisk and disabling the `Zygisk` option.
+
+Kitsune builds are detected through their database capabilities instead of a version-name suffix. SuList is handled as an allowlist, while normal MagiskHide mode reads Kitsune's native `hidelist`. Magisk and Kitsune both require a reported version code of at least `26402`.
 
 ### 3. Verify the installation
 
