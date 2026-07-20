@@ -5,6 +5,7 @@ DEBUG=@DEBUG@
 MIN_KSU_VERSION=@MIN_KSU_VERSION@
 MIN_KSUD_VERSION=@MIN_KSUD_VERSION@
 MIN_MAGISK_VERSION=@MIN_MAGISK_VERSION@
+MIN_KITSUNE_VERSION=@MIN_KITSUNE_VERSION@
 MIN_APATCH_VERSION=@MIN_APATCH_VERSION@
 
 if [ "$BOOTMODE" ] && [ "$KSU" ]; then
@@ -38,7 +39,11 @@ if [ "$BOOTMODE" ] && [ "$KSU" ]; then
     fi
 elif [ "$BOOTMODE" ] && [ "$MAGISK_VER_CODE" ]; then
   ui_print "- Installing from Magisk app"
-  if [ "$MAGISK_VER_CODE" -lt "$MIN_MAGISK_VERSION" ]; then
+  INSTALLED_MAGISK_MIN_VERSION=$MIN_MAGISK_VERSION
+  if [ "$(magisk --sqlite "SELECT 1 FROM sqlite_master WHERE type='table' AND name='sulist' LIMIT 1")" ]; then
+    INSTALLED_MAGISK_MIN_VERSION=$MIN_KITSUNE_VERSION
+  fi
+  if [ "$MAGISK_VER_CODE" -lt "$INSTALLED_MAGISK_MIN_VERSION" ]; then
     ui_print "*********************************************************"
     ui_print "! Magisk version is too old!"
     ui_print "! Please update Magisk to latest version"

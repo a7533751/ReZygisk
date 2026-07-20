@@ -23,6 +23,7 @@ ZYGISKD_CFLAGS = -D_GNU_SOURCE -std=c99 -Wpedantic -Wall -Wextra -Werror  \
 				 -DMIN_APATCH_VERSION=$(MIN_APATCH_VERSION)               \
 				 -DMIN_KSU_VERSION=$(MIN_KSU_VERSION)                     \
 				 -DMIN_MAGISK_VERSION=$(MIN_MAGISK_VERSION)               \
+				 -DMIN_KITSUNE_VERSION=$(MIN_KITSUNE_VERSION)             \
 				 '-DZKSU_VERSION="$(ZKSU_VERSION)"'
 
 SRCS = src/root_impl/apatch.c src/root_impl/common.c        \

@@ -101,7 +101,8 @@ void magisk_get_existence(struct root_impl_state *state) {
     return;
   }
 
-  if (atoi(magisk_version) >= MIN_MAGISK_VERSION) state->state = Supported;
+  int minimum_version = magisk_variant == MKitsune ? MIN_KITSUNE_VERSION : MIN_MAGISK_VERSION;
+  if (atoi(magisk_version) >= minimum_version) state->state = Supported;
   else state->state = TooOld;
 }
 

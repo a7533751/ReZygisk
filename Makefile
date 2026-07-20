@@ -87,6 +87,7 @@ $(MODULE_DONE): $(LOADER_DONE) $(ZYGISKD_DONE) $(MODULE_INPUTS)
 		    -e 's/@MIN_KSU_VERSION@/$(MIN_KSU_VERSION)/g'                   \
 		    -e 's/@MIN_KSUD_VERSION@/$(MIN_KSUD_VERSION)/g'                 \
 		    -e 's/@MIN_MAGISK_VERSION@/$(MIN_MAGISK_VERSION)/g'             \
+		    -e 's/@MIN_KITSUNE_VERSION@/$(MIN_KITSUNE_VERSION)/g'           \
 		    module/src/$$script > $(MODULE_OUT)/$$script;                   \
 	done
 

@@ -49,7 +49,7 @@ After flashing, check the installation logs to ensure there are no errors, and i
 > [!WARNING]
 > Magisk users should disable built-in Zygisk, as it will conflict with ReZygisk. This can be done by going to the `Settings` section of Magisk and disabling the `Zygisk` option.
 
-Kitsune builds are detected through their database capabilities instead of a version-name suffix. SuList is handled as an allowlist, while normal MagiskHide mode reads Kitsune's native `hidelist`. Magisk and Kitsune both require a reported version code of at least `26402`.
+Kitsune builds are detected through their database capabilities instead of a version-name suffix. SuList is handled as an allowlist, while normal MagiskHide mode reads Kitsune's native `hidelist`. Official Magisk requires a reported version code of at least `26402`, while Kitsune requires at least `26400`.
 
 ### 3. Verify the installation
 
